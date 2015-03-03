@@ -20,3 +20,29 @@ GOOGLE_CLIENT_SECRET - Client Secret
 GOOGLE_REDIRECT_URI  - Redirect URI (http://localhost in most cases)
 GOOGLE_REFRESH_TOKEN - Refresh token issued with access token
 ```
+
+### How to issue an access token?
+1. Open authorization page
+1. Authorize
+1. Get code parameter from redirect URL
+1. Send POST request with the code
+
+```sh
+open "https://accounts.google.com/o/oauth2/auth\
+?client_id=${GOOGLE_CLIENT_ID}\
+&redirect_uri=http://localhost\
+&scope=https://www.googleapis.com/auth/calendar\
+&response_type=code\
+&approval_prompt=force\
+&access_type=offline"
+```
+
+```sh
+curl \
+  -d "client_id=${GOOGLE_CLIENT_ID}"\
+  -d "client_secret=${GOOGLE_CLIENT_SECRET}"\
+  -d "redirect_uri=http://localhost"\
+  -d "grant_type=authorization_code"
+  -d "code=${CODE}"\
+   "https://accounts.google.com/o/oauth2/token"
+```
