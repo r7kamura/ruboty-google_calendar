@@ -85,7 +85,6 @@ module Ruboty
           end
         end
 
-        # @todo Support access token expiration.
         def authenticate!
           api_client.authorization.fetch_access_token!
         end
