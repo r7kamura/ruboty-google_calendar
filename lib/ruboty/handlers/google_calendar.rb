@@ -123,16 +123,31 @@ module Ruboty
 
         private
 
+        def all_day?
+          @item.start.date_time.nil?
+        end
+
         def finished_at
-          if @item.start.date_time.localtime.day == @item.end.date_time.localtime.day
+          case
+          when all_day?
+            "--:--"
+          when finished_in_same_day?
             @item.end.date_time.localtime.strftime("%H:%M")
           else
             @item.end.date_time.localtime.strftime("%Y-%m-%d %H:%M")
           end
         end
 
+        def finished_in_same_day?
+          @item.start.date_time.localtime.day == @item.end.date_time.localtime.day
+        end
+
         def started_at
-          @item.start.date_time.localtime.strftime("%Y-%m-%d %H:%M")
+          if all_day?
+            "#{@item.start.date} --:--"
+          else
+            @item.start.date_time.localtime.strftime("%Y-%m-%d %H:%M")
+          end
         end
 
         def summary
