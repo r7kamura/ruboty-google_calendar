@@ -17,13 +17,16 @@ module Ruboty
       env :GOOGLE_REFRESH_TOKEN, "Refresh token issued with access token"
 
       on(
-        /list events\z/,
+        /list events ?(?<number>\d*?) ?(days?)?\z/,
         description: "List events from Google Calendar",
         name: "list_events",
       )
 
       def list_events(message)
-        text = client.list_events(calendar_id: calendar_id).items.map do |item|
+        days = message[:number].to_i.zero? ? 1 : message[:number].to_i
+        event_items = client.list_events(calendar_id: calendar_id, days: days ).items
+        return unless event_items.size > 0
+        text = event_items.map do |item|
           ItemView.new(item)
         end.join("\n")
         message.reply(text, code: true)
@@ -58,7 +61,7 @@ module Ruboty
           authenticate!
         end
 
-        def list_events(calendar_id: nil)
+        def list_events(calendar_id: nil, days: days)
           api_client.execute(
             api_method: calendar.events.list,
             parameters: {
@@ -66,7 +69,7 @@ module Ruboty
               singleEvents: true,
               orderBy: "startTime",
               timeMin: Time.now.iso8601,
-              timeMax: 1.day.since.iso8601
+              timeMax: days.day.since.iso8601
             }
           ).data
         end
