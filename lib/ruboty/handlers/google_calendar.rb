@@ -29,10 +29,14 @@ module Ruboty
           calendar_id: calendar_id,
           duration: message[:minute].try(:to_i).try(:minute) || DEFAULT_DURATION,
         ).items
-        text = event_items.map do |item|
-          ItemView.new(item)
-        end.join("\n")
-        message.reply(text, code: true)
+        if event_items.size > 0
+          text = event_items.map do |item|
+            ItemView.new(item)
+          end.join("\n")
+          message.reply(text, code: true)
+        else
+          true
+        end
       end
 
       private
