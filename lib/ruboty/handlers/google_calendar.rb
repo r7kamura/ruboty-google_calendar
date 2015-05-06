@@ -1,5 +1,6 @@
 require "active_support/core_ext/date/calculations"
 require "active_support/core_ext/numeric/time"
+require "active_support/core_ext/object/try"
 require "google/api_client"
 require "google/api_client/client_secrets"
 require "ruboty"
@@ -9,6 +10,7 @@ module Ruboty
   module Handlers
     class GoogleCalendar < Base
       DEFAULT_CALENDAR_ID = "primary"
+      DEFAULT_DURATION = 1.day
 
       env :GOOGLE_CALENDAR_ID, "Google Calendar ID (default: primary)", optional: true
       env :GOOGLE_CLIENT_ID, "Client ID"
@@ -17,15 +19,16 @@ module Ruboty
       env :GOOGLE_REFRESH_TOKEN, "Refresh token issued with access token"
 
       on(
-        /list events ?(?<number>\d*?) ?(days?)?\z/,
+        /list events( in (?<minute>\d+) minutes)?\z/,
         description: "List events from Google Calendar",
         name: "list_events",
       )
 
       def list_events(message)
-        days = message[:number].to_i.zero? ? 1 : message[:number].to_i
-        event_items = client.list_events(calendar_id: calendar_id, days: days ).items
-        return unless event_items.size > 0
+        event_items = client.list_events(
+          calendar_id: calendar_id,
+          duration: message[:minute].try(:to_i).try(:minute) || DEFAULT_DURATION,
+        ).items
         text = event_items.map do |item|
           ItemView.new(item)
         end.join("\n")
@@ -61,7 +64,9 @@ module Ruboty
           authenticate!
         end
 
-        def list_events(calendar_id: nil, days: days)
+        # @param [String] calendar_id
+        # @param [ActiveSupport::Duration] duration
+        def list_events(calendar_id: nil, duration: nil)
           api_client.execute(
             api_method: calendar.events.list,
             parameters: {
@@ -69,7 +74,7 @@ module Ruboty
               singleEvents: true,
               orderBy: "startTime",
               timeMin: Time.now.iso8601,
-              timeMax: days.day.since.iso8601
+              timeMax: duration.since.iso8601
             }
           ).data
         end

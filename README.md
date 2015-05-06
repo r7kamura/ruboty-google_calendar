@@ -6,6 +6,9 @@
 > @ruboty list events
 2015-03-04 09:30 - 09:40 Stand-up meeting
 2015-03-04 14:00 - 15:00 Engineering meeting
+>
+> @ruboty list events in 30 minutes
+2015-03-04 09:30 - 09:40 Stand-up meeting
 ```
 
 ## ENV
