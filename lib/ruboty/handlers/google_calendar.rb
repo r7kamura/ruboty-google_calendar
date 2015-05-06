@@ -56,7 +56,7 @@ module Ruboty
 
       class Client
         APPLICATION_NAME = "ruboty-google_calendar"
-        AUTH_URI  = "https://accounts.google.com/o/oauth2/auth"
+        AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
         SCOPE = "https://www.googleapis.com/auth/calendar"
         TOKEN_URI = "https://accounts.google.com/o/oauth2/token"
 
