@@ -45,7 +45,7 @@ curl \
   -d "client_id=${GOOGLE_CLIENT_ID}"\
   -d "client_secret=${GOOGLE_CLIENT_SECRET}"\
   -d "redirect_uri=http://localhost"\
-  -d "grant_type=authorization_code"
+  -d "grant_type=authorization_code"\
   -d "code=${CODE}"\
    "https://accounts.google.com/o/oauth2/token"
 ```
