@@ -19,7 +19,8 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 3.3"
 
   spec.add_runtime_dependency "activesupport"
-  spec.add_runtime_dependency "google-api-client", "~> 0.8.7"
+  spec.add_runtime_dependency "google-apis-calendar_v3"
+  spec.add_runtime_dependency "googleauth"
   spec.add_runtime_dependency "ruboty"
   spec.add_development_dependency "rake"
 end
