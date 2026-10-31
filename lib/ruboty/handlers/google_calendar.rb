@@ -1,8 +1,8 @@
 require "active_support/core_ext/date/calculations"
 require "active_support/core_ext/numeric/time"
 require "active_support/core_ext/object/try"
-require "google/api_client"
-require "google/api_client/client_secrets"
+require "google/apis/calendar_v3"
+require "googleauth"
 require "ruboty"
 require "time"
 
@@ -25,10 +25,10 @@ module Ruboty
       )
 
       def list_events(message)
-        event_items = client.list_events(
+        event_items = Array(client.list_events(
           calendar_id: calendar_id,
           duration: message[:minute].try(:to_i).try(:minute) || DEFAULT_DURATION,
-        ).items
+        ).items)
         if event_items.size > 0
           text = event_items.map do |item|
             ItemView.new(item)
@@ -56,9 +56,8 @@ module Ruboty
 
       class Client
         APPLICATION_NAME = "ruboty-google_calendar"
-        AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
         SCOPE = "https://www.googleapis.com/auth/calendar"
-        TOKEN_URI = "https://accounts.google.com/o/oauth2/token"
+        TOKEN_URI = "https://oauth2.googleapis.com/token"
 
         def initialize(client_id: nil, client_secret: nil, redirect_uri: nil, refresh_token: nil)
           @client_id = client_id
@@ -71,56 +70,40 @@ module Ruboty
         # @param [String] calendar_id
         # @param [ActiveSupport::Duration] duration
         def list_events(calendar_id: nil, duration: nil)
-          api_client.execute(
-            api_method: calendar.events.list,
-            parameters: {
-              calendarId: calendar_id,
-              singleEvents: true,
-              orderBy: "startTime",
-              timeMin: Time.now.iso8601,
-              timeMax: duration.since.iso8601
-            }
-          ).data
+          service.list_events(
+            calendar_id,
+            single_events: true,
+            order_by: "startTime",
+            time_min: Time.now.iso8601,
+            time_max: duration.since.iso8601,
+          )
         end
 
         private
 
-        def api_client
-          @api_client ||= begin
-            _api_client = Google::APIClient.new(
-              application_name: APPLICATION_NAME,
-              application_version: Ruboty::GoogleCalendar::VERSION,
-            )
-            _api_client.authorization = authorization
-            _api_client.authorization.scope = SCOPE
-            _api_client
-          end
-        end
-
         def authenticate!
-          api_client.authorization.fetch_access_token!
+          authorization.fetch_access_token!
         end
 
         def authorization
-          client_secrets.to_authorization
-        end
-
-        def client_secrets
-          Google::APIClient::ClientSecrets.new(
-            flow: :installed,
-            installed: {
-              auth_uri: AUTH_URI,
-              client_id: @client_id,
-              client_secret: @client_secret,
-              redirect_uris: [@redirect_uri],
-              refresh_token: @refresh_token,
-              token_uri: TOKEN_URI,
-            },
+          @authorization ||= Google::Auth::UserRefreshCredentials.new(
+            client_id: @client_id,
+            client_secret: @client_secret,
+            redirect_uri: @redirect_uri,
+            refresh_token: @refresh_token,
+            scope: SCOPE,
+            token_credential_uri: TOKEN_URI,
           )
         end
 
-        def calendar
-          @calendar ||= api_client.discovered_api("calendar", "v3")
+        def service
+          @service ||= begin
+            _service = Google::Apis::CalendarV3::CalendarService.new
+            _service.client_options.application_name = APPLICATION_NAME
+            _service.client_options.application_version = Ruboty::GoogleCalendar::VERSION
+            _service.authorization = authorization
+            _service
+          end
         end
       end
 
@@ -144,21 +127,21 @@ module Ruboty
           when all_day?
             "--:--"
           when finished_in_same_day?
-            @item.end.date_time.localtime.strftime("%H:%M")
+            @item.end.date_time.to_time.localtime.strftime("%H:%M")
           else
-            @item.end.date_time.localtime.strftime("%Y-%m-%d %H:%M")
+            @item.end.date_time.to_time.localtime.strftime("%Y-%m-%d %H:%M")
           end
         end
 
         def finished_in_same_day?
-          @item.start.date_time.localtime.day == @item.end.date_time.localtime.day
+          @item.start.date_time.to_time.localtime.day == @item.end.date_time.to_time.localtime.day
         end
 
         def started_at
           if all_day?
             "#{@item.start.date} --:--"
           else
-            @item.start.date_time.localtime.strftime("%Y-%m-%d %H:%M")
+            @item.start.date_time.to_time.localtime.strftime("%Y-%m-%d %H:%M")
           end
         end
 
